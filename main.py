@@ -43,15 +43,16 @@ def extract_words():
                 # done to be able to read fonts
                 # reference: https://pymupdf.readthedocs.io/en/latest/recipes-text.html
                 blocks = page.get_text("dict", flags=11, clip=whole_rect)["blocks"]
-                for b in blocks:  # iterate through the text blocks
-                    for l in b["lines"]:  # iterate through the consecutive texts detected
+                for block in blocks:  # iterate through the text blocks
+                    for line in block["lines"]:  # iterate through the consecutive texts detected
                         iter_count += 1
-                        if l["spans"][0]["size"] > FONT_SIZE:
+                        if line["spans"][0]["size"] > FONT_SIZE:
                             # if the size of the text is greater than 8.5 (dictionary
                             # entry font), skip the entire line
                             continue
-                        x0, y0, x1, y1 = l["bbox"]  # else, get next bounding box details
-                        if math.floor(current_clip_rect[1]) >= math.floor(y0):  # if trying to read the same line again, skip
+                        x0, y0, x1, y1 = line["bbox"]  # else, get next bounding box details
+                        if math.floor(current_clip_rect[1]) >= math.floor(y0):  # if trying to read the same line
+                            # again, skip
                             continue
                         # update bounding box for clipping
                         current_clip_rect[1] = y0
@@ -67,19 +68,18 @@ def extract_words():
                 assert len(de_lines) == len(en_lines), "Extraction Error: Unequal entries. Mapping not possible"
             print(f"Inner loop entered {iter_count} times")
 
-
         # simple one-level parentheses balance checker
         def has_open_parentheses(s):
             if s.rfind("(") > s.rfind(")"):
                 return True
             return False
 
-
         # combining next-entry to entry if entry is incomplete
         ind = 0
         while ind < len(de_lines)-1:
             # if either entries have open parentheses, or an empty entry, combine
-            if has_open_parentheses(de_lines[ind]) or has_open_parentheses(en_lines[ind]) or de_lines[ind].strip() == "" or en_lines[ind].strip() == "":
+            if (has_open_parentheses(de_lines[ind]) or has_open_parentheses(en_lines[ind])
+                    or de_lines[ind].strip() == "" or en_lines[ind].strip() == ""):
                 de_lines[ind] += " " + de_lines[ind + 1]
                 en_lines[ind] += " " + en_lines[ind + 1]
                 de_lines.pop(ind + 1)  # remove combined German entry
@@ -133,7 +133,7 @@ def print_all():
 def play_random_word():
     dictionary = get_dict_from_csv()
     word = random.choice(dictionary)
-    print(word)
+    print(f"{word["de"]} :: {word["en"]}")
     playWord.play_word_de(word["de"])
 
 
