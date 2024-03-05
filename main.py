@@ -16,14 +16,13 @@ LEFT_OFFSET = 0.045  # offsetting to cut off irrelevant annotations (e.g. exerci
 PAGE_START = 3  # skipping title page, info page
 PDF_PATH_STR = "B1-Glossary.pdf"  # file in same directory as main.py
 FILE_NAME = Path(PDF_PATH_STR).stem
-dictionary = []
 
 
 def extract_words():
     if os.path.isfile(PDF_PATH_STR):
         de_lines = []  # German entries from beginning to end of doc, read as rows
         en_lines = []  # English entries from beginning to end of doc, read as rows
-
+        dictionary = []
         ''' PyMuPDF begins '''
         with fitz.open(PDF_PATH_STR) as doc:
             iter_count = 0
@@ -90,7 +89,6 @@ def extract_words():
                 # if combination not required, move on to next entry
                 ind += 1
 
-        global dictionary
         # create a list of dictionary items
         # de-en instead of key:value for future option to add native support
         for i in range(len(de_lines)):
@@ -105,51 +103,42 @@ def extract_words():
         # reference: https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
         dictionary = [dict(t) for t in {tuple(d.items()) for d in dictionary}]
         print("Dictionary creation completed! Final count: ", len(dictionary))
+        print("Saving extracted text to csv...")
+        dict_dframe = pd.DataFrame(dictionary)
+        dict_dframe.to_csv(FILE_NAME + ".csv")
 
     else:
         print("File not found. Check file path")
 
 
-def save_to_csv():
-    if dictionary is None or len(dictionary) == 0:
+def get_dict_from_csv():
+    dataframe = get_dframe_from_csv()
+    return dataframe.to_dict('records')
+
+
+def get_dframe_from_csv():
+    filepath = FILE_NAME + ".csv"
+    if not os.path.isfile(filepath):
         extract_words()
-    print("Saving extracted text to csv...")
-    dict_dframe = pd.DataFrame(dictionary)
-    dict_dframe.to_csv(FILE_NAME + ".csv")
-
-
-def print_dframe_head():
-    if dictionary is None or len(dictionary) == 0:
-        extract_words()
-    print("Creating and printing sample...")
-    dict_dframe = pd.DataFrame(dictionary)
-    print(dict_dframe.head())
-
-
-def print_all_as_dframe():
-    if dictionary is None or len(dictionary) == 0:
-        extract_words()
-    print("Creating dataframe for print using pandas...")
-    dict_dframe = pd.DataFrame(dictionary)
-    print(dict_dframe)
+    dataframe = pd.read_csv(filepath)
+    return dataframe
 
 
 def print_all():
-    if dictionary is None or len(dictionary) == 0:
-        extract_words()
+    dictionary = get_dict_from_csv()
     for index, entry in enumerate(dictionary):
         print(f"{index + 1} |  {entry["de"]} :: {entry["en"]}")
 
 
 def play_random_word():
-    if dictionary is None or len(dictionary) == 0:
-        extract_words()
+    dictionary = get_dict_from_csv()
     word = random.choice(dictionary)
     print(word)
     playWord.play_word_de(word["de"])
 
 
 play_random_word()
+
 '''
 POSSIBLE IMPROVEMENTS:
 - check file path. create absolute path if seen fit
