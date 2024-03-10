@@ -6,41 +6,9 @@ from tqdm import tqdm  # install package tqdm
 import pandas as pd
 
 
-# simple one-level parentheses balance checker
-def has_open_parentheses(s):
-    if s.rfind("(") > s.rfind(")"):
-        return True
-    return False
-
-
-def starts_with_parentheses(s):
-    if s.find("(") == 0:
-        return True
-    return False
-
-
-def combine_lines(de_lines, en_lines):
-    # combining next-entry to entry if entry is incomplete
-    ind = 0
-    while ind < len(de_lines) - 1:
-        # if either entries have open parentheses, or is an empty entry, combine with next
-        if (has_open_parentheses(de_lines[ind]) or has_open_parentheses(en_lines[ind])
-                or de_lines[ind].strip() == "" or en_lines[ind].strip() == "" or starts_with_parentheses(de_lines[ind])
-                or starts_with_parentheses(en_lines[ind])):
-            de_lines[ind] += " " + de_lines[ind + 1]
-            en_lines[ind] += " " + en_lines[ind + 1]
-            de_lines.pop(ind + 1)  # remove combined German entry
-            en_lines.pop(ind + 1)  # remove combined English entry
-            # do not increment index. check again if parentheses was closed
-        else:
-            # if combination not required, move on to next entry
-            ind += 1
-    return de_lines, en_lines
-
-
 class Dictionary:
     def __init__(self, target_font=8.5, filename_wo_ext="B1-Glossary", starting_page=3, margin=0.1, left_offset=0.045):
-        assert target_font > 0, "Fontsize cannot be negative"
+        assert target_font > 0, "Font-size cannot be negative"
         assert filename_wo_ext.strip() != "", "Filename cannot be empty"
         assert starting_page >= 0, "Invalid starting page"
         assert 0 <= margin < 0.5, "Invalid margin"
@@ -53,6 +21,40 @@ class Dictionary:
         self.left_offset = left_offset
         self.dict_list = []
         self.populate_dict_from_csv()
+
+    # simple one-level parentheses balance checker
+    @staticmethod
+    def has_open_parentheses(s):
+        if s.rfind("(") > s.rfind(")"):
+            return True
+        return False
+
+    # if the line starts with a parentheses, it belongs with previous line
+    @staticmethod
+    def starts_with_parentheses(s):
+        if s.find("(") == 0:
+            return True
+        return False
+
+    @staticmethod
+    def combine_lines(self, de_lines, en_lines):
+        # combining next-entry to entry if entry is incomplete
+        ind = 0
+        while ind < len(de_lines) - 1:
+            # if either entries have open parentheses, or is an empty entry, combine with next
+            if (self.has_open_parentheses(de_lines[ind]) or self.has_open_parentheses(en_lines[ind])
+                    or de_lines[ind].strip() == "" or en_lines[ind].strip() == "" or self.starts_with_parentheses(
+                        de_lines[ind])
+                    or self.starts_with_parentheses(en_lines[ind])):
+                de_lines[ind] += " " + de_lines[ind + 1]
+                en_lines[ind] += " " + en_lines[ind + 1]
+                de_lines.pop(ind + 1)  # remove combined German entry
+                en_lines.pop(ind + 1)  # remove combined English entry
+                # do not increment index. check again if parentheses was closed
+            else:
+                # if combination not required, move on to next entry
+                ind += 1
+        return de_lines, en_lines
 
     def populate_dict_from_lists(self, de_lines, en_lines):
         # create a list of dictionary items
@@ -123,7 +125,7 @@ class Dictionary:
                 print(f"Inner loop entered {iter_count} times")
 
             # combining next-entry to entry if entry is incomplete
-            de_lines, en_lines = combine_lines(de_lines, en_lines)
+            de_lines, en_lines = self.combine_lines(self, de_lines, en_lines)
             self.populate_dict_from_lists(de_lines, en_lines)
             self.remove_duplicates()
             self.save_to_csv()
